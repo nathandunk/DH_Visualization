@@ -1,47 +1,91 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class RobotClasses : MonoBehaviour {
 
     public class Joint
     {
-        public string JointType;
+        public string jointtype;
+        public double a;
+        public double alpha;
+        public double d;
+        public double theta;
+        public Vector3 origin;
+        public GameObject gameobject;
+        public GameObject panel;
 
-        public Joint(string JointType_, double alpha, double a, double d, double theta)
+
+        public Joint(string jointtype_, double alpha_, double a_, double d_, double theta_)
         {
-            this.JointType = JointType_;
+            this.jointtype = jointtype_;   
+            this.a = a_;
+            this.alpha = a_;
+            this.d = a_;
+            this.theta = a_;
         }
     }
 
     public class Robot
     {
+        Joint DefaultJoint = new Joint("r", 0, 0, 0, 0);
         public List<Joint> Joints = new List<Joint>();
         public List<string> JointTypes = new List<string>();
-        public string[] JointTypes;
-        public double[] alpha;
-        public double[] a;
-        public double[] d;
-        public double[] theta;
+        public List<double> Alpha = new List<double>();
+        public List<double> A = new List<double>();
+        public List<double> D = new List<double>();
+        public List<double> Theta = new List<double>();
 
-        public Robot(Joint[] joints_)
+        public Robot()
         {
-            this.Joints = joints_;
+            AddJoint();
         }
 
-        public void AddJoint(string type, double alpha, double a, double d, double theta)
+        public Robot(Joint joint_)
         {
-
+            AddJoint(joint_);
         }
 
-        //private void dhtf(self):
+        public Robot(List<Joint> joints_)
+        {
+            foreach (Joint joint in Joints)
+            {
+                AddJoint(joint);
+            }
+        }
 
-        //Matrix self.T_full = Matrix.Identity
-        //for i in range(0, self.size+1):
-        //    T_hold = np.array([[np.cos(self.joint_values[i]), -np.sin(self.joint_values[i]), 0, self.a[i]],
+        // Adds a default joint to the Robot. Appends joint vector as well as all the parameters
+        // In this case, the default joint is a rotational joint with all parameters (a, alpha, d, theta as 0)
+        public void AddJoint()
+        {
+            this.AddJoint(new Joint("r", 0, 0, 0, 0));
+        }
+
+        // Adds a joint to the Robot. Appends joint vector as well as all the parameters
+        public void AddJoint(Joint joint_)
+        {
+            Joints.Add(joint_);
+            this.JointTypes.Add(joint_.jointtype);
+            this.Alpha.Add(joint_.alpha);
+            this.A.Add(joint_.a);
+            this.D.Add(joint_.d);
+            this.Theta.Add(joint_.theta);
+        }
+
+        private void dhtf()
+        {
+            double[,] T_full = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0, 1 } };
+            for (int i = 0; i < this.Joints.Count; i++)
+            {
+                T_hold = {{ Math.Cos(this.Joints[i].theta), np.cos(self.joint_values[i]), -np.sin(self.joint_values[i]), 0, self.a[i]},
         //        [np.sin(self.joint_values[i]) * np.cos(self.alpha[i]), np.cos(self.joint_values[i]) * np.cos(self.alpha[i]), -np.sin(self.alpha[i]), -np.sin(self.alpha[i]) * self.d[i]],
         //        [np.sin(self.joint_values[i]) * np.sin(self.alpha[i]), np.cos(self.joint_values[i]) * np.sin(self.alpha[i]), np.cos(self.alpha[i]), np.cos(self.alpha[i]) * self.d[i]],
         //        [0, 0, 0, 1]])
+            }
+        }
+        //for i in range(0, self.size+1):
+        //    
         //    # print(T_hold.shape)
         //    # print(T_hold)
         //    self.T_full = np.matmul(self.T_full, T_hold)
@@ -56,7 +100,8 @@ public class RobotClasses : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
-		Robot robot(Joint)
+        Joint StarterJoint = new Joint("r", 0, 0, 10, 0);
+        Robot robot = new Robot(StarterJoint);
 	}
 	
 	// Update is called once per frame
