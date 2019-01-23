@@ -37,19 +37,23 @@ public class RobotClasses : MonoBehaviour {
         public List<double> A = new List<double>();
         public List<double> D = new List<double>();
         public List<double> Theta = new List<double>();
+        public GameObject RobotObject;
 
-        public Robot()
+        public Robot(GameObject RobotObject_)
         {
+            RobotObject = RobotObject_;
             AddJoint();
         }
 
-        public Robot(Joint joint_)
+        public Robot(Joint joint_, GameObject RobotObject_)
         {
+            RobotObject = RobotObject_;
             AddJoint(joint_);
         }
 
-        public Robot(List<Joint> joints_)
+        public Robot(List<Joint> joints_, GameObject RobotObject_)
         {
+            RobotObject = RobotObject_;
             foreach (Joint joint in Joints)
             {
                 AddJoint(joint);
@@ -73,7 +77,7 @@ public class RobotClasses : MonoBehaviour {
             this.D.Add(joint_.d);
             this.Theta.Add(joint_.theta);
 
-            GameObject NewJoint = Instantiate(Resources.Load("Joint", typeof(GameObject)), gameObject) as GameObject;
+            GameObject NewJoint = Instantiate(Resources.Load("Joint", typeof(GameObject)), RobotObject.transform) as GameObject;
             NewJoint.transform.position = new Vector3(0, 0, 0);
             NewJoint.transform.rotation = Quaternion.Euler(0, 0, 0);
             Joints[Joints.Count - 1].gameobject = NewJoint;
@@ -100,7 +104,7 @@ public class RobotClasses : MonoBehaviour {
     // Use this for initialization
     void Start () {
         Joint StarterJoint = new Joint("r", 0, 0, 10, 0, new Vector3(0,0,0));
-        Robot robot = new Robot(StarterJoint);
+        Robot robot = new Robot(StarterJoint, gameObject);
 	}
 	
 	// Update is called once per frame
