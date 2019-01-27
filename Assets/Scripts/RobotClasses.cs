@@ -2,8 +2,113 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using UnityEngine.UI;
+using System.Globalization;
 
 public class RobotClasses : MonoBehaviour {
+
+    Robot robot;
+    public Button AddJointButton;
+
+    public class JointPanel
+    {
+        Joint CorrespondingJoint;
+        GameObject gameobject;
+        int JointNumber;
+        public List<Slider>     SliderList     = new List<Slider>(); // order alpha, a, d, theta
+        public List<InputField> InputFieldList = new List<InputField>(); // order alpha, a, d, theta
+
+        public JointPanel(Joint joint_, int JointNumber_)
+        {
+            this.JointNumber = JointNumber_;
+            CorrespondingJoint = joint_;
+            GameObject NewPanel = Instantiate(Resources.Load("JointPanel", typeof(GameObject)), GameObject.Find("Panel").transform) as GameObject;
+            this.gameobject = NewPanel;
+
+            foreach (string term in new string[] {"alpha", "a", "d", "theta"})
+            {
+                Slider slider_temp = this.gameobject.transform.Find(term).Find("Slider").gameObject.GetComponent<Slider>();
+                InputField inputfield_temp = this.gameobject.transform.Find(term).Find("Value").gameObject.GetComponent<InputField>();
+
+                SliderList.Add(slider_temp);
+                InputFieldList.Add(inputfield_temp);
+
+                // Have the two objects, slider and input field, listen to eachother and stay in sync
+                slider_temp.onValueChanged.AddListener(delegate { SyncSliderTextBox(slider_temp, inputfield_temp); });
+                inputfield_temp.onValueChanged.AddListener(delegate { SyncTextBoxSlider(slider_temp, inputfield_temp); });
+
+                inputfield_temp.onValueChanged.AddListener(delegate { SyncSliderJointValue(inputfield_temp, term); });
+            }
+            NewPanel.GetComponent<RectTransform>().anchoredPosition = new Vector3(0, -75 - this.JointNumber*150, 0);
+        }
+
+        public void SyncSliderJointValue(InputField inputfield_, string term_)
+        {
+            switch (term_)
+            {
+                case "alpha":
+                    try
+                    {
+                        this.CorrespondingJoint.alpha = float.Parse(inputfield_.text, CultureInfo.InvariantCulture.NumberFormat);
+                    }
+                    catch (FormatException)
+                    {
+                        this.CorrespondingJoint.alpha = 0;
+                    }
+                    break;
+                case "a":
+                    try
+                    {
+                        this.CorrespondingJoint.a = float.Parse(inputfield_.text, CultureInfo.InvariantCulture.NumberFormat);
+                    }
+                    catch (FormatException)
+                    {
+                        this.CorrespondingJoint.a = 0;
+                    }
+                    break;
+                case "d":
+                    try
+                    {
+                        this.CorrespondingJoint.d = float.Parse(inputfield_.text, CultureInfo.InvariantCulture.NumberFormat);
+                    }
+                    catch (FormatException)
+                    {
+                        this.CorrespondingJoint.d = 0;
+                    }
+                    break;
+                case "theta":
+                    try
+                    {
+                        this.CorrespondingJoint.theta = float.Parse(inputfield_.text, CultureInfo.InvariantCulture.NumberFormat);
+                    }
+                    catch (FormatException)
+                    {
+                        this.CorrespondingJoint.theta = 0;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        public void SyncSliderTextBox(Slider slider_, InputField inputfield_)
+        {
+            inputfield_.text = (slider_.value*50).ToString();
+        }
+
+        public void SyncTextBoxSlider(Slider slider_, InputField inputfield_)
+        {
+            try
+            {
+                slider_.value = float.Parse(inputfield_.text, CultureInfo.InvariantCulture.NumberFormat) / 50;
+            }
+            catch (FormatException)
+            {
+                slider_.value = 0;
+            }
+            
+        }
+    }
 
     public class Joint
     {
@@ -13,8 +118,9 @@ public class RobotClasses : MonoBehaviour {
         public double d;
         public double theta;
         public Vector3 origin;
+        public Vector3 EE;
         public GameObject gameobject;
-        public GameObject panel;
+        public JointPanel pannel;
 
 
         public Joint(string jointtype_, double alpha_, double a_, double d_, double theta_, Vector3 origin_)
@@ -25,6 +131,24 @@ public class RobotClasses : MonoBehaviour {
             this.d = d_;
             this.theta = theta_;
             this.origin = origin_;
+        }
+
+        public void UpdateJointShape()
+        {
+            ///////// UPDATING D /////////
+            Vector3 TempScale = this.gameobject.transform.Find("Connections").Find("Cube").transform.localScale;
+            TempScale[1] = (float)this.d;
+            this.gameobject.transform.Find("Connections").Find("Cube").transform.localScale = TempScale;
+
+            // Update the position to be d/2 to keep the connection in the correct place
+            Vector3 TempPosit = this.gameobject.transform.Find("Connections").Find("Cube").transform.localPosition;
+            TempPosit[1] = (float)this.d/2.0f;
+            this.gameobject.transform.Find("Connections").Find("Cube").transform.localPosition = TempPosit;
+
+            ///////// UPDATING THETA ///////// 
+            Vector3 TempRot = this.gameobject.transform.localEulerAngles;
+            TempRot[1] = (float)this.theta;
+            this.gameobject.transform.localEulerAngles = TempRot;
         }
     }
 
@@ -37,6 +161,7 @@ public class RobotClasses : MonoBehaviour {
         public List<double> A = new List<double>();
         public List<double> D = new List<double>();
         public List<double> Theta = new List<double>();
+        public List<Vector3> Origins = new List<Vector3> { new Vector3(0, 0, 0) };
         public GameObject RobotObject;
 
         public Robot(GameObject RobotObject_)
@@ -70,6 +195,7 @@ public class RobotClasses : MonoBehaviour {
         // Adds a joint to the Robot. Appends joint vector as well as all the parameters
         public void AddJoint(Joint joint_)
         {
+            joint_.pannel = new JointPanel(joint_,Joints.Count);
             Joints.Add(joint_);
             this.JointTypes.Add(joint_.jointtype);
             this.Alpha.Add(joint_.alpha);
@@ -81,34 +207,59 @@ public class RobotClasses : MonoBehaviour {
             NewJoint.transform.position = new Vector3(0, 0, 0);
             NewJoint.transform.rotation = Quaternion.Euler(0, 0, 0);
             Joints[Joints.Count - 1].gameobject = NewJoint;
-        }
+            Origins.Add(new Vector3(0, 0, 0));
+    }
 
         public void dhtf()
         {
             double[,] T_full = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0, 1 } };
             for (int i = 0; i < this.Joints.Count; i++)
             {
-                double [,] T_hold = {{ Math.Cos(this.Joints[i].theta), -Math.Sin(this.Joints[i].theta), 0, this.Joints[i].a}, 
-                                     { Math.Sin(this.Joints[i].theta) * Math.Cos(this.Joints[i].alpha), Math.Cos(this.Joints[i].theta) * Math.Cos(this.Joints[i].alpha), -Math.Sin(this.Joints[i].alpha), -Math.Sin(this.Joints[i].alpha) * this.Joints[i].d}, 
-                                     { Math.Sin(this.Joints[i].theta) * Math.Sin(this.Joints[i].alpha), Math.Cos(this.Joints[i].theta) * Math.Sin(this.Joints[i].alpha), Math.Cos(this.Joints[i].alpha), Math.Cos(this.Joints[i].alpha) * this.Joints[i].d}, 
+                double AlphaRad = this.Joints[i].alpha * Math.PI / 180;
+                double ThetaRad = this.Joints[i].theta * Math.PI / 180;
+
+                double [,] T_hold = {{ Math.Cos(ThetaRad), -Math.Sin(ThetaRad), 0, this.Joints[i].a}, 
+                                     { Math.Sin(ThetaRad) * Math.Cos(AlphaRad), Math.Cos(ThetaRad) * Math.Cos(AlphaRad), -Math.Sin(AlphaRad), -Math.Sin(AlphaRad) * this.Joints[i].d}, 
+                                     { Math.Sin(ThetaRad) * Math.Sin(AlphaRad), Math.Cos(ThetaRad) * Math.Sin(AlphaRad), Math.Cos(AlphaRad), Math.Cos(AlphaRad) * this.Joints[i].d}, 
                                      { 0, 0, 0, 1} };
 
                 T_full = MatrixFunctions.MultiplyMatrix(T_full, T_hold);
-                this.Joints[i].origin = new Vector3((float)(T_full[0,0]), (float)(T_full[0, 1]), (float)(T_full[0, 2]));
 
-                this.Joints[i].gameobject.transform.Rotate(new Vector3((float)this.Joints[i].alpha,0,(float)this.Joints[i].theta));
+                this.Origins[i+1] = new Vector3((float)(T_full[0, 0]), (float)(T_full[0, 1]), (float)(T_full[0, 2]));
+
+                this.Joints[i].gameobject.transform.localPosition = this.Origins[i];//new Vector3((float)(T_full[0,0]), (float)(T_full[0, 1]), (float)(T_full[0, 2]));
+
+                //this.Joints[i].gameobject.transform.Rotate(new Vector3((float)this.Joints[i].alpha,0,(float)this.Joints[i].theta));
             }
         }
     }
 
     // Use this for initialization
     void Start () {
-        Joint StarterJoint = new Joint("r", 0, 0, 10, 0, new Vector3(0,0,0));
-        Robot robot = new Robot(StarterJoint, gameObject);
+        Joint StarterJoint = new Joint("r", 0, 0, 20, 0, new Vector3(0,0,0));
+        robot = new Robot(StarterJoint, gameObject);
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		
+        robot.dhtf();
+        foreach (Joint joint in robot.Joints)
+        {
+            joint.UpdateJointShape();
+        }
 	}
+
+    public void AddRobotJoint()
+    {
+        robot.AddJoint();
+
+        Vector3 ButtonPosTemp = AddJointButton.GetComponent<RectTransform>().anchoredPosition;
+        ButtonPosTemp[1] = -(165 + 150 * (robot.Joints.Count-1));
+        AddJointButton.GetComponent<RectTransform>().anchoredPosition = ButtonPosTemp;
+
+        if (robot.Joints.Count > 6)
+        {
+            AddJointButton.gameObject.SetActive(false);
+        }
+    }
 }
