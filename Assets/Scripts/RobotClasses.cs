@@ -93,14 +93,14 @@ public class RobotClasses : MonoBehaviour {
 
         public void SyncSliderTextBox(Slider slider_, InputField inputfield_)
         {
-            inputfield_.text = (slider_.value*50).ToString();
+            inputfield_.text = (slider_.value*180).ToString();
         }
 
         public void SyncTextBoxSlider(Slider slider_, InputField inputfield_)
         {
             try
             {
-                slider_.value = float.Parse(inputfield_.text, CultureInfo.InvariantCulture.NumberFormat) / 50;
+                slider_.value = float.Parse(inputfield_.text, CultureInfo.InvariantCulture.NumberFormat) / 180;
             }
             catch (FormatException)
             {
@@ -218,25 +218,32 @@ public class RobotClasses : MonoBehaviour {
                 double AlphaRad = this.Joints[i].alpha * Math.PI / 180;
                 double ThetaRad = this.Joints[i].theta * Math.PI / 180;
 
-                double [,] T_hold = {{ Math.Cos(ThetaRad), -Math.Sin(ThetaRad), 0, this.Joints[i].a}, 
+                double [,] T_hold = {{ Math.Cos(ThetaRad),                     -Math.Sin(ThetaRad),                       0,                   this.Joints[i].a}, 
                                      { Math.Sin(ThetaRad) * Math.Cos(AlphaRad), Math.Cos(ThetaRad) * Math.Cos(AlphaRad), -Math.Sin(AlphaRad), -Math.Sin(AlphaRad) * this.Joints[i].d}, 
-                                     { Math.Sin(ThetaRad) * Math.Sin(AlphaRad), Math.Cos(ThetaRad) * Math.Sin(AlphaRad), Math.Cos(AlphaRad), Math.Cos(AlphaRad) * this.Joints[i].d}, 
+                                     { Math.Sin(ThetaRad) * Math.Sin(AlphaRad), Math.Cos(ThetaRad) * Math.Sin(AlphaRad),  Math.Cos(AlphaRad),   Math.Cos(AlphaRad) * this.Joints[i].d}, 
                                      { 0, 0, 0, 1} };
 
                 T_full = MatrixFunctions.MultiplyMatrix(T_full, T_hold);
 
-                this.Origins[i+1] = new Vector3((float)(T_full[0, 0]), (float)(T_full[0, 1]), (float)(T_full[0, 2]));
+                this.Origins[i+1] = new Vector3((float)(T_full[0, 3]), (float)(T_full[1, 3]), (float)(T_full[2, 3]));
+                
 
-                this.Joints[i].gameobject.transform.localPosition = this.Origins[i];//new Vector3((float)(T_full[0,0]), (float)(T_full[0, 1]), (float)(T_full[0, 2]));
+                this.Joints[i].gameobject.transform.localPosition = new Vector3(-this.Origins[i][0], this.Origins[i][2], this.Origins[i][1]);//new Vector3((float)(T_full[0,0]), (float)(T_full[0, 1]), (float)(T_full[0, 2]));
 
+                if (i == this.Joints.Count-1)
+                {
+                    Debug.Log(new Vector3((float)T_hold[0,0], (float)T_hold[1, 1], (float)T_hold[2,2]));
+                }
+                
                 //this.Joints[i].gameobject.transform.Rotate(new Vector3((float)this.Joints[i].alpha,0,(float)this.Joints[i].theta));
             }
+            
         }
     }
 
     // Use this for initialization
     void Start () {
-        Joint StarterJoint = new Joint("r", 0, 0, 20, 0, new Vector3(0,0,0));
+        Joint StarterJoint = new Joint("r", 0, 0, 10, 0, new Vector3(0,0,0));
         robot = new Robot(StarterJoint, gameObject);
 	}
 	
