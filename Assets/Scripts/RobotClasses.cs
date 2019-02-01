@@ -146,15 +146,15 @@ public class RobotClasses : MonoBehaviour {
             this.gameobject.transform.Find("Connections").Find("Cube").transform.localPosition = TempPosit;
 
             ///////// UPDATING THETA ///////// 
-            Vector3 TempRot = this.gameobject.transform.localEulerAngles;
-            TempRot[1] = (float)this.theta;
-            this.gameobject.transform.localEulerAngles = TempRot;
+            //Vector3 TempRot = this.gameobject.transform.localEulerAngles;
+            //TempRot[1] = (float)this.theta;
+            //this.gameobject.transform.localEulerAngles = TempRot;
         }
     }
 
     public class Robot
     {
-        Joint DefaultJoint = new Joint("r", 0, 0, 0, 0, new Vector3(0,0,0));
+        Joint DefaultJoint = new Joint("r", 0, 0, 0, 0, new Vector3(0, 0, 0));
         public List<Joint> Joints = new List<Joint>();
         public List<string> JointTypes = new List<string>();
         public List<double> Alpha = new List<double>();
@@ -189,13 +189,13 @@ public class RobotClasses : MonoBehaviour {
         // In this case, the default joint is a rotational joint with all parameters (a, alpha, d, theta as 0)
         public void AddJoint()
         {
-            this.AddJoint(new Joint("r", 0, 0, 0, 0, new Vector3(0,0,0)));
+            this.AddJoint(new Joint("r", 0, 0, 0, 0, new Vector3(0, 0, 0)));
         }
 
         // Adds a joint to the Robot. Appends joint vector as well as all the parameters
         public void AddJoint(Joint joint_)
         {
-            joint_.pannel = new JointPanel(joint_,Joints.Count);
+            joint_.pannel = new JointPanel(joint_, Joints.Count);
             Joints.Add(joint_);
             this.JointTypes.Add(joint_.jointtype);
             this.Alpha.Add(joint_.alpha);
@@ -208,7 +208,7 @@ public class RobotClasses : MonoBehaviour {
             NewJoint.transform.rotation = Quaternion.Euler(0, 0, 0);
             Joints[Joints.Count - 1].gameobject = NewJoint;
             Origins.Add(new Vector3(0, 0, 0));
-    }
+        }
 
         public void dhtf()
         {
@@ -218,26 +218,39 @@ public class RobotClasses : MonoBehaviour {
                 double AlphaRad = this.Joints[i].alpha * Math.PI / 180;
                 double ThetaRad = this.Joints[i].theta * Math.PI / 180;
 
-                double [,] T_hold = {{ Math.Cos(ThetaRad),                     -Math.Sin(ThetaRad),                       0,                   this.Joints[i].a}, 
-                                     { Math.Sin(ThetaRad) * Math.Cos(AlphaRad), Math.Cos(ThetaRad) * Math.Cos(AlphaRad), -Math.Sin(AlphaRad), -Math.Sin(AlphaRad) * this.Joints[i].d}, 
-                                     { Math.Sin(ThetaRad) * Math.Sin(AlphaRad), Math.Cos(ThetaRad) * Math.Sin(AlphaRad),  Math.Cos(AlphaRad),   Math.Cos(AlphaRad) * this.Joints[i].d}, 
+                double[,] T_hold = {{ Math.Cos(ThetaRad),                      -Math.Sin(ThetaRad),                       0,                   this.Joints[i].a},
+                                     { Math.Sin(ThetaRad) * Math.Cos(AlphaRad), Math.Cos(ThetaRad) * Math.Cos(AlphaRad), -Math.Sin(AlphaRad), -Math.Sin(AlphaRad) * this.Joints[i].d},
+                                     { Math.Sin(ThetaRad) * Math.Sin(AlphaRad), Math.Cos(ThetaRad) * Math.Sin(AlphaRad),  Math.Cos(AlphaRad),   Math.Cos(AlphaRad) * this.Joints[i].d},
                                      { 0, 0, 0, 1} };
 
                 T_full = MatrixFunctions.MultiplyMatrix(T_full, T_hold);
 
-                this.Origins[i+1] = new Vector3((float)(T_full[0, 3]), (float)(T_full[1, 3]), (float)(T_full[2, 3]));
-                
+                this.Origins[i + 1] = new Vector3((float)(T_full[0, 3]), (float)(T_full[1, 3]), (float)(T_full[2, 3]));
+
 
                 this.Joints[i].gameobject.transform.localPosition = new Vector3(-this.Origins[i][0], this.Origins[i][2], this.Origins[i][1]);//new Vector3((float)(T_full[0,0]), (float)(T_full[0, 1]), (float)(T_full[0, 2]));
-
-                if (i == this.Joints.Count-1)
+                this.Joints[i].gameobject.transform.localRotation = Quaternion.Euler(TtoXYZ(T_full));
+                if (i == this.Joints.Count - 1)
                 {
-                    Debug.Log(new Vector3((float)T_hold[0,0], (float)T_hold[1, 1], (float)T_hold[2,2]));
+                    Debug.Log(new Vector3((float)T_hold[0, 0], (float)T_hold[1, 1], (float)T_hold[2, 2]));
                 }
-                
+
                 //this.Joints[i].gameobject.transform.Rotate(new Vector3((float)this.Joints[i].alpha,0,(float)this.Joints[i].theta));
             }
-            
+
+        }
+
+        private Vector3 TtoXYZ(double[,] T)
+        {
+            float X_angle = (float)Math.Atan2(T[2, 1], T[2, 2]);
+            float Y_angle = (float)Math.Atan2(-T[2, 0], Math.Sqrt(T[2, 1] * T[2, 1] + T[2, 2] * T[2, 2]));
+            float Z_angle = (float)Math.Atan2(T[1, 0], T[0, 0]);
+
+            //float Y_angle = -(float)Math.Asin(T[2, 0]);
+            //float X_angle = (float)Math.Atan2(T[2, 1]/Math.Cos(Y_angle), T[2, 2] / Math.Cos(Y_angle));
+            //float Z_angle = (float)Math.Atan2(T[1, 0] / Math.Cos(Y_angle), T[0, 0] / Math.Cos(Y_angle));
+
+            return new Vector3(X_angle, Y_angle, Z_angle);
         }
     }
 
