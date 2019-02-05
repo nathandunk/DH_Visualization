@@ -17,6 +17,7 @@ public class RobotClasses : MonoBehaviour {
         int JointNumber;
         public List<Slider>     SliderList     = new List<Slider>(); // order alpha, a, d, theta
         public List<InputField> InputFieldList = new List<InputField>(); // order alpha, a, d, theta
+        string JointName = "<b>Joint 0:</b>";
 
         public JointPanel(Joint joint_, int JointNumber_)
         {
@@ -24,6 +25,9 @@ public class RobotClasses : MonoBehaviour {
             CorrespondingJoint = joint_;
             GameObject NewPanel = Instantiate(Resources.Load("JointPanel", typeof(GameObject)), GameObject.Find("Panel").transform) as GameObject;
             this.gameobject = NewPanel;
+            this.JointName = "<b>Joint " + this.JointNumber.ToString() + ":</b>";
+
+            this.gameobject.transform.Find("JointName").GetComponent<Text>().text = this.JointName;
 
             foreach (string term in new string[] {"alpha", "a", "d", "theta"})
             {
@@ -93,20 +97,70 @@ public class RobotClasses : MonoBehaviour {
 
         public void SyncSliderTextBox(Slider slider_, InputField inputfield_)
         {
-            inputfield_.text = (slider_.value*180).ToString();
+                        float Min;
+            float Max;
+            switch (slider_.transform.parent.name)
+            {
+                case "alpha":
+                    Min = -180;
+                    Max = 180;
+                    break;
+                case "a":
+                    Min = 0;
+                    Max = 200;
+                    break;
+                case "theta":
+                    Min = -180;
+                    Max = 180;
+                    break;
+                case "d":
+                    Min = 0;
+                    Max = 200;
+                    break;
+                default:
+                    Min = 0;
+                    Max = 1;
+                    break;
+            }
+            inputfield_.text = ((Max-Min)*slider_.value+Min).ToString();
         }
 
         public void SyncTextBoxSlider(Slider slider_, InputField inputfield_)
         {
+            float Min;
+            float Max;
+            switch (slider_.transform.parent.name)
+            {
+                case "alpha":
+                    Min = -180;
+                    Max = 180;
+                    break;
+                case "a":
+                    Min = 0;
+                    Max = 200;
+                    break;
+                case "theta":
+                    Min = -180;
+                    Max = 180;
+                    break;
+                case "d":
+                    Min = 0;
+                    Max = 200;
+                    break;
+                default:
+                    Min = 0;
+                    Max = 1;
+                    break;
+            }
             try
             {
-                slider_.value = float.Parse(inputfield_.text, CultureInfo.InvariantCulture.NumberFormat) / 180;
+                float InputNumber = float.Parse(inputfield_.text, CultureInfo.InvariantCulture.NumberFormat);
+                slider_.value = (InputNumber - Min)/(Max-Min);
             }
             catch (FormatException)
             {
                 slider_.value = 0;
             }
-            
         }
     }
 
@@ -213,22 +267,26 @@ public class RobotClasses : MonoBehaviour {
         public void dhtf()
         {
             double[,] T_full = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0, 1 } };
-            for (int i = 0; i < this.Joints.Count; i++)
+            for (int i = 1; i < this.Joints.Count; i++)
             {
-                double AlphaRad = this.Joints[i].alpha * Math.PI / 180;
+                double AlphaRad = this.Joints[i-1].alpha * Math.PI / 180;
                 double ThetaRad = this.Joints[i].theta * Math.PI / 180;
 
-                double[,] T_hold = {{ Math.Cos(ThetaRad),                      -Math.Sin(ThetaRad),                       0,                   this.Joints[i].a},
+                double[,] T_hold = {{ Math.Cos(ThetaRad),                      -Math.Sin(ThetaRad),                       0,                   this.Joints[i-1].a},
                                      { Math.Sin(ThetaRad) * Math.Cos(AlphaRad), Math.Cos(ThetaRad) * Math.Cos(AlphaRad), -Math.Sin(AlphaRad), -Math.Sin(AlphaRad) * this.Joints[i].d},
                                      { Math.Sin(ThetaRad) * Math.Sin(AlphaRad), Math.Cos(ThetaRad) * Math.Sin(AlphaRad),  Math.Cos(AlphaRad),   Math.Cos(AlphaRad) * this.Joints[i].d},
                                      { 0, 0, 0, 1} };
+                //double[,] T_hold = {{  Math.Cos(ThetaRad),-Math.Sin(ThetaRad)*Math.Cos(AlphaRad),    Math.Sin(ThetaRad)*Math.Sin(AlphaRad), this.Joints[i].a*Math.Cos(ThetaRad)},
+                //                     { Math.Sin(ThetaRad), Math.Cos(ThetaRad)*Math.Cos(AlphaRad),   -Math.Cos(ThetaRad)*Math.Sin(AlphaRad), this.Joints[i].a*Math.Sin(ThetaRad)},
+                //                     { 0,                  Math.Sin(AlphaRad),                       Math.Cos(AlphaRad),                    this.Joints[i].d},
+                //                     { 0,                  0,                                        0,                                     1} };
 
                 T_full = MatrixFunctions.MultiplyMatrix(T_full, T_hold);
 
-                this.Origins[i + 1] = new Vector3((float)(T_full[0, 3]), (float)(T_full[1, 3]), (float)(T_full[2, 3]));
-
+                this.Origins[i + 1] = new Vector3((float)(-T_full[1, 3]), (float)(T_full[0, 3]), (float)(T_full[2, 3]));
 
                 this.Joints[i].gameobject.transform.localPosition = new Vector3(-this.Origins[i][0], this.Origins[i][2], this.Origins[i][1]);//new Vector3((float)(T_full[0,0]), (float)(T_full[0, 1]), (float)(T_full[0, 2]));
+                //this.Joints[i].gameobject.transform.localRotation = QuaternionFromMatrix(T_full);
                 this.Joints[i].gameobject.transform.localRotation = Quaternion.Euler(TtoXYZ(T_full));
                 if (i == this.Joints.Count - 1)
                 {
@@ -242,21 +300,23 @@ public class RobotClasses : MonoBehaviour {
 
         private Vector3 TtoXYZ(double[,] T)
         {
-            float X_angle = (float)Math.Atan2(T[2, 1], T[2, 2]);
-            float Y_angle = (float)Math.Atan2(-T[2, 0], Math.Sqrt(T[2, 1] * T[2, 1] + T[2, 2] * T[2, 2]));
-            float Z_angle = (float)Math.Atan2(T[1, 0], T[0, 0]);
+            //float X_angle = (float)Math.Atan2(T[2, 1], T[2, 2]);
+            //float Y_angle = (float)Math.Atan2(-T[2, 0], Math.Sqrt(T[2, 1] * T[2, 1] + T[2, 2] * T[2, 2]));
+            //float Z_angle = (float)Math.Atan2(T[1, 0], T[0, 0]);
 
-            //float Y_angle = -(float)Math.Asin(T[2, 0]);
-            //float X_angle = (float)Math.Atan2(T[2, 1]/Math.Cos(Y_angle), T[2, 2] / Math.Cos(Y_angle));
-            //float Z_angle = (float)Math.Atan2(T[1, 0] / Math.Cos(Y_angle), T[0, 0] / Math.Cos(Y_angle));
+            float Y_angle = -(float)Math.Asin(T[2, 0]);
+            float X_angle = (float)Math.Atan2(T[2, 1] / Math.Cos(Y_angle), T[2, 2] / Math.Cos(Y_angle));
+            float Z_angle = (float)Math.Atan2(T[1, 0] / Math.Cos(Y_angle), T[0, 0] / Math.Cos(Y_angle));
 
-            return new Vector3(X_angle, Y_angle, Z_angle);
+            float Rad2Deg = 180f / (float)Math.PI;
+
+            return new Vector3(-Y_angle * Rad2Deg, Z_angle * Rad2Deg, X_angle * Rad2Deg);
         }
     }
 
     // Use this for initialization
     void Start () {
-        Joint StarterJoint = new Joint("r", 0, 0, 10, 0, new Vector3(0,0,0));
+        Joint StarterJoint = new Joint("r", 0, 0, 0, 0, new Vector3(0,0,0));
         robot = new Robot(StarterJoint, gameObject);
 	}
 	
