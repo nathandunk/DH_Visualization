@@ -17,7 +17,7 @@ public class RobotClasses : MonoBehaviour {
         int JointNumber;
         public List<Slider>     SliderList     = new List<Slider>(); // order alpha, a, d, theta
         public List<InputField> InputFieldList = new List<InputField>(); // order alpha, a, d, theta
-        string JointName = "<b>Joint 0:</b>";
+        string JointName = "<b>Joint 1:</b>";
 
         public JointPanel(Joint joint_, int JointNumber_)
         {
@@ -25,7 +25,7 @@ public class RobotClasses : MonoBehaviour {
             CorrespondingJoint = joint_;
             GameObject NewPanel = Instantiate(Resources.Load("JointPanel", typeof(GameObject)), GameObject.Find("Panel").transform) as GameObject;
             this.gameobject = NewPanel;
-            this.JointName = "<b>Joint " + this.JointNumber.ToString() + ":</b>";
+            this.JointName = "<b>Joint " + (this.JointNumber+1).ToString() + ":</b>";
 
             this.gameobject.transform.Find("JointName").GetComponent<Text>().text = this.JointName;
 
@@ -267,14 +267,23 @@ public class RobotClasses : MonoBehaviour {
         public void dhtf()
         {
             double[,] T_full = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0, 1 } };
-            for (int i = 1; i < this.Joints.Count; i++)
+            for (int i = 0; i < this.Joints.Count; i++)
             {
-                double AlphaRad = this.Joints[i-1].alpha * Math.PI / 180;
-                double ThetaRad = this.Joints[i].theta * Math.PI / 180;
+                double AlphaRad = 0;
+                double A = 0;
 
-                double[,] T_hold = {{ Math.Cos(ThetaRad),                      -Math.Sin(ThetaRad),                       0,                   this.Joints[i-1].a},
-                                     { Math.Sin(ThetaRad) * Math.Cos(AlphaRad), Math.Cos(ThetaRad) * Math.Cos(AlphaRad), -Math.Sin(AlphaRad), -Math.Sin(AlphaRad) * this.Joints[i].d},
-                                     { Math.Sin(ThetaRad) * Math.Sin(AlphaRad), Math.Cos(ThetaRad) * Math.Sin(AlphaRad),  Math.Cos(AlphaRad),   Math.Cos(AlphaRad) * this.Joints[i].d},
+                if (i != 0)
+                {
+                    AlphaRad = this.Joints[i - 1].alpha * Math.PI / 180;
+                    A = this.Joints[i - 1].a;
+                }
+
+                double ThetaRad = this.Joints[i].theta * Math.PI / 180;
+                double D = this.Joints[i].d;
+
+                double[,] T_hold = {{ Math.Cos(ThetaRad),                      -Math.Sin(ThetaRad),                       0,                   A},
+                                     { Math.Sin(ThetaRad) * Math.Cos(AlphaRad), Math.Cos(ThetaRad) * Math.Cos(AlphaRad), -Math.Sin(AlphaRad), -Math.Sin(AlphaRad) * D},
+                                     { Math.Sin(ThetaRad) * Math.Sin(AlphaRad), Math.Cos(ThetaRad) * Math.Sin(AlphaRad),  Math.Cos(AlphaRad),   Math.Cos(AlphaRad) * D},
                                      { 0, 0, 0, 1} };
                 //double[,] T_hold = {{  Math.Cos(ThetaRad),-Math.Sin(ThetaRad)*Math.Cos(AlphaRad),    Math.Sin(ThetaRad)*Math.Sin(AlphaRad), this.Joints[i].a*Math.Cos(ThetaRad)},
                 //                     { Math.Sin(ThetaRad), Math.Cos(ThetaRad)*Math.Cos(AlphaRad),   -Math.Cos(ThetaRad)*Math.Sin(AlphaRad), this.Joints[i].a*Math.Sin(ThetaRad)},
