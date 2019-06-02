@@ -269,15 +269,16 @@ public class RobotClasses : MonoBehaviour {
             double[,] T_full = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0, 1 } };
             for (int i = 0; i < this.Joints.Count; i++)
             {
-                double AlphaRad = 0;
-                double A = 0;
+                // double AlphaRad = 0;
+                // double A = 0;
 
-                if (i != 0)
-                {
-                    AlphaRad = this.Joints[i - 1].alpha * Math.PI / 180;
-                    A = this.Joints[i - 1].a;
-                }
-
+                // if (i != 0)
+                // {
+                //     AlphaRad = this.Joints[i - 1].alpha * Math.PI / 180;
+                //     A = this.Joints[i - 1].a;
+                // }
+                double AlphaRad = this.Joints[i].alpha * Math.PI / 180;
+                double A = this.Joints[i].a;
                 double ThetaRad = this.Joints[i].theta * Math.PI / 180;
                 double D = this.Joints[i].d;
 
@@ -292,11 +293,11 @@ public class RobotClasses : MonoBehaviour {
 
                 T_full = MatrixFunctions.MultiplyMatrix(T_full, T_hold);
 
-                this.Origins[i + 1] = new Vector3((float)(-T_full[1, 3]), (float)(T_full[0, 3]), (float)(T_full[2, 3]));
+                this.Origins[i + 1] = new Vector3((float)(T_full[1, 3]), (float)(T_full[0, 3]), (float)(T_full[2, 3]));
 
-                this.Joints[i].gameobject.transform.localPosition = new Vector3(-this.Origins[i][0], this.Origins[i][2], this.Origins[i][1]);//new Vector3((float)(T_full[0,0]), (float)(T_full[0, 1]), (float)(T_full[0, 2]));
+                this.Joints[i].gameobject.transform.position = new Vector3(-this.Origins[i][0], this.Origins[i][2], this.Origins[i][1]);//new Vector3((float)(T_full[0,0]), (float)(T_full[0, 1]), (float)(T_full[0, 2]));
                 //this.Joints[i].gameobject.transform.localRotation = QuaternionFromMatrix(T_full);
-                this.Joints[i].gameobject.transform.localRotation = Quaternion.Euler(TtoXYZ(T_full));
+                this.Joints[i].gameobject.transform.eulerAngles = TtoXYZ(T_full);
                 if (i == this.Joints.Count - 1)
                 {
                     Debug.Log(new Vector3((float)T_hold[0, 0], (float)T_hold[1, 1], (float)T_hold[2, 2]));
@@ -319,7 +320,8 @@ public class RobotClasses : MonoBehaviour {
 
             float Rad2Deg = 180f / (float)Math.PI;
 
-            return new Vector3(-Y_angle * Rad2Deg, Z_angle * Rad2Deg, X_angle * Rad2Deg);
+            return new Vector3( Y_angle* Rad2Deg, -Z_angle * Rad2Deg, -X_angle * Rad2Deg);
+            // return new Vector3( -X_angle * Rad2Deg, -Y_angle * Rad2Deg, Z_angle * Rad2Deg);
         }
     }
 
