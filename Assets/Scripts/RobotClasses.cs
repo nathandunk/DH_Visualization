@@ -10,6 +10,52 @@ public class RobotClasses : MonoBehaviour {
     Robot robot;
     public Button AddJointButton;
 
+    MotionProfile RobMotionProfile;
+
+    static public Vector3 robot_center;
+
+    public class MotionProfile{
+        // int num_joints;
+        // double sample_rate;
+        // double max_time;
+        public float StartTime = 0;
+
+        public bool Executing = false;
+
+        private List<string[]> MotionProfileLinesString = new List<string[]>();
+        public List<float[]> MotionProfileLines = new List<float[]>();
+
+        public void LoadProfile(){
+            string[] MotionProfileCSV = System.IO.File.ReadAllLines(@"MotionProfiles\Profile1.csv");
+
+            foreach (string line in MotionProfileCSV){
+                MotionProfileLinesString.Add(line.Trim().Split(","[0]));
+
+                float[] hold = {0,0,0,0};
+                int i = 0;
+
+                foreach (var item in MotionProfileLinesString[MotionProfileLinesString.Count-1])
+                {
+                    try
+                    {
+                        hold[i] = float.Parse(item);
+                        i++;
+                    }
+                    catch (SystemException)
+                    {
+                        
+                    }
+                }
+                MotionProfileLines.Add(hold);
+            }
+        }
+
+        public void ExecuteProfile(){
+            StartTime = Time.time;
+            Executing = true;
+        }
+    }
+
     public class JointPanel
     {
         Joint CorrespondingJoint;
@@ -97,7 +143,7 @@ public class RobotClasses : MonoBehaviour {
 
         public void SyncSliderTextBox(Slider slider_, InputField inputfield_)
         {
-                        float Min;
+            float Min;
             float Max;
             switch (slider_.transform.parent.name)
             {
@@ -198,11 +244,6 @@ public class RobotClasses : MonoBehaviour {
             Vector3 TempPosit = this.gameobject.transform.Find("Connections").Find("Cube").transform.localPosition;
             TempPosit[1] = (float)this.d/2.0f;
             this.gameobject.transform.Find("Connections").Find("Cube").transform.localPosition = TempPosit;
-
-            ///////// UPDATING THETA ///////// 
-            //Vector3 TempRot = this.gameobject.transform.localEulerAngles;
-            //TempRot[1] = (float)this.theta;
-            //this.gameobject.transform.localEulerAngles = TempRot;
         }
     }
 
@@ -269,14 +310,7 @@ public class RobotClasses : MonoBehaviour {
             double[,] T_full = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0, 1 } };
             for (int i = 0; i < this.Joints.Count; i++)
             {
-                // double AlphaRad = 0;
-                // double A = 0;
 
-                // if (i != 0)
-                // {
-                //     AlphaRad = this.Joints[i - 1].alpha * Math.PI / 180;
-                //     A = this.Joints[i - 1].a;
-                // }
                 double AlphaRad = this.Joints[i].alpha * Math.PI / 180;
                 double A = this.Joints[i].a;
                 double ThetaRad = this.Joints[i].theta * Math.PI / 180;
@@ -286,34 +320,27 @@ public class RobotClasses : MonoBehaviour {
                                      { Math.Sin(ThetaRad) * Math.Cos(AlphaRad), Math.Cos(ThetaRad) * Math.Cos(AlphaRad), -Math.Sin(AlphaRad), -Math.Sin(AlphaRad) * D},
                                      { Math.Sin(ThetaRad) * Math.Sin(AlphaRad), Math.Cos(ThetaRad) * Math.Sin(AlphaRad),  Math.Cos(AlphaRad),   Math.Cos(AlphaRad) * D},
                                      { 0, 0, 0, 1} };
-                //double[,] T_hold = {{  Math.Cos(ThetaRad),-Math.Sin(ThetaRad)*Math.Cos(AlphaRad),    Math.Sin(ThetaRad)*Math.Sin(AlphaRad), this.Joints[i].a*Math.Cos(ThetaRad)},
-                //                     { Math.Sin(ThetaRad), Math.Cos(ThetaRad)*Math.Cos(AlphaRad),   -Math.Cos(ThetaRad)*Math.Sin(AlphaRad), this.Joints[i].a*Math.Sin(ThetaRad)},
-                //                     { 0,                  Math.Sin(AlphaRad),                       Math.Cos(AlphaRad),                    this.Joints[i].d},
-                //                     { 0,                  0,                                        0,                                     1} };
 
                 T_full = MatrixFunctions.MultiplyMatrix(T_full, T_hold);
 
                 this.Origins[i + 1] = new Vector3((float)(T_full[1, 3]), (float)(T_full[0, 3]), (float)(T_full[2, 3]));
 
-                this.Joints[i].gameobject.transform.position = new Vector3(-this.Origins[i][0], this.Origins[i][2], this.Origins[i][1]);//new Vector3((float)(T_full[0,0]), (float)(T_full[0, 1]), (float)(T_full[0, 2]));
-                //this.Joints[i].gameobject.transform.localRotation = QuaternionFromMatrix(T_full);
+                // Transform position to -x, z, y
+                this.Joints[i].gameobject.transform.position = new Vector3(-this.Origins[i][0], this.Origins[i][2], this.Origins[i][1]);
+
+                // Perform rotation (see TtoXYZ for details)
                 this.Joints[i].gameobject.transform.eulerAngles = TtoXYZ(T_full);
                 if (i == this.Joints.Count - 1)
                 {
-                    Debug.Log(new Vector3((float)T_hold[0, 0], (float)T_hold[1, 1], (float)T_hold[2, 2]));
+                    robot_center = this.Joints[i].gameobject.transform.position/2f;
                 }
 
-                //this.Joints[i].gameobject.transform.Rotate(new Vector3((float)this.Joints[i].alpha,0,(float)this.Joints[i].theta));
             }
 
         }
 
         private Vector3 TtoXYZ(double[,] T)
         {
-            //float X_angle = (float)Math.Atan2(T[2, 1], T[2, 2]);
-            //float Y_angle = (float)Math.Atan2(-T[2, 0], Math.Sqrt(T[2, 1] * T[2, 1] + T[2, 2] * T[2, 2]));
-            //float Z_angle = (float)Math.Atan2(T[1, 0], T[0, 0]);
-
             float Y_angle = -(float)Math.Asin(T[2, 0]);
             float X_angle = (float)Math.Atan2(T[2, 1] / Math.Cos(Y_angle), T[2, 2] / Math.Cos(Y_angle));
             float Z_angle = (float)Math.Atan2(T[1, 0] / Math.Cos(Y_angle), T[0, 0] / Math.Cos(Y_angle));
@@ -321,7 +348,6 @@ public class RobotClasses : MonoBehaviour {
             float Rad2Deg = 180f / (float)Math.PI;
 
             return new Vector3( Y_angle* Rad2Deg, -Z_angle * Rad2Deg, -X_angle * Rad2Deg);
-            // return new Vector3( -X_angle * Rad2Deg, -Y_angle * Rad2Deg, Z_angle * Rad2Deg);
         }
     }
 
@@ -329,14 +355,28 @@ public class RobotClasses : MonoBehaviour {
     void Start () {
         Joint StarterJoint = new Joint("r", 0, 0, 0, 0, new Vector3(0,0,0));
         robot = new Robot(StarterJoint, gameObject);
+
+        RobMotionProfile = new MotionProfile();
+
+        RobMotionProfile.LoadProfile();
 	}
 	
 	// Update is called once per frame
 	void Update () {
         robot.dhtf();
+
         foreach (Joint joint in robot.Joints)
         {
             joint.UpdateJointShape();
+        }
+        
+        if (Time.time > 10.0)
+        {
+            if (!RobMotionProfile.Executing)
+            {
+                RobMotionProfile.ExecuteProfile();
+            }
+            UpdateProfile(RobMotionProfile, robot);
         }
 	}
 
@@ -351,6 +391,21 @@ public class RobotClasses : MonoBehaviour {
         if (robot.Joints.Count > 6)
         {
             AddJointButton.gameObject.SetActive(false);
+        }
+    }
+
+    public void UpdateProfile(MotionProfile MotionProfile_, Robot Robot_)
+    {
+        float TargetTime = Time.time-MotionProfile_.StartTime;
+        bool FoundTime = false;
+        for (int i = 0; i < MotionProfile_.MotionProfileLines.Count; i++)
+        {
+            if (MotionProfile_.MotionProfileLines[i][0] >= TargetTime && FoundTime == false){
+                Robot_.Joints[0].pannel.InputFieldList[3].text = MotionProfile_.MotionProfileLines[i][1].ToString();
+                Robot_.Joints[1].pannel.InputFieldList[3].text = MotionProfile_.MotionProfileLines[i][2].ToString();
+                Robot_.Joints[2].pannel.InputFieldList[3].text = MotionProfile_.MotionProfileLines[i][3].ToString();
+                FoundTime = true;
+            }
         }
     }
 }
