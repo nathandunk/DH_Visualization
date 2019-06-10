@@ -370,12 +370,7 @@ public class RobotClasses : MonoBehaviour {
             joint.UpdateJointShape();
         }
         
-        if (Time.time > 10.0)
-        {
-            if (!RobMotionProfile.Executing)
-            {
-                RobMotionProfile.ExecuteProfile();
-            }
+        if (RobMotionProfile.Executing){
             UpdateProfile(RobMotionProfile, robot);
         }
 	}
@@ -394,7 +389,12 @@ public class RobotClasses : MonoBehaviour {
         }
     }
 
-    public void UpdateProfile(MotionProfile MotionProfile_, Robot Robot_)
+    public void StartProfile()
+    {
+        RobMotionProfile.ExecuteProfile();
+    }
+
+    private void UpdateProfile(MotionProfile MotionProfile_, Robot Robot_)
     {
         float TargetTime = Time.time-MotionProfile_.StartTime;
         bool FoundTime = false;
@@ -407,5 +407,6 @@ public class RobotClasses : MonoBehaviour {
                 FoundTime = true;
             }
         }
+        MotionProfile_.Executing = false;
     }
 }
