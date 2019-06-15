@@ -11,6 +11,6 @@ public class RobotCenter : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		gameObject.transform.position = RobotClasses.robot_center;
+		gameObject.transform.position = RobotManager.robot_center;
 	}
 }
