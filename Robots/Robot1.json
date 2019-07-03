@@ -1,0 +1,17 @@
+{
+    "Joints": [
+        {"JointType": "r",
+         "alpha": 0,
+         "a":     0,
+         "d":     0,
+         "theta": 60
+        },
+
+        {"JointType": "r",
+         "alpha": 20,
+         "a":     5,
+         "d":     10,
+         "theta": 60
+        }
+    ]
+}

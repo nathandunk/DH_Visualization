@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using UnityEngine.UI;
+using System.IO;
 using System.Globalization;
 
 public class RobotManager : MonoBehaviour {
@@ -52,6 +53,20 @@ public class RobotManager : MonoBehaviour {
         }
     }
 
+    public void AddRobotJoint(Joint joint_)
+    {
+        robot.AddJoint(joint_);
+
+        Vector3 ButtonPosTemp = AddJointButton.GetComponent<RectTransform>().anchoredPosition;
+        ButtonPosTemp[1] = -(165 + 150 * (robot.Joints.Count-1));
+        AddJointButton.GetComponent<RectTransform>().anchoredPosition = ButtonPosTemp;
+
+        if (robot.Joints.Count > 6)
+        {
+            AddJointButton.gameObject.SetActive(false);
+        }
+    }
+
     public void StartProfile()
     {
         RobMotionProfile.ExecuteProfile();
@@ -65,12 +80,30 @@ public class RobotManager : MonoBehaviour {
             if (MotionProfile_.MotionProfileLines[i][0] >= TargetTime){
                 for (int j = 0; j < MotionProfile_.MotionProfileLines[i].Length-1; j++)
                 {
-                    Debug.Log(MotionProfile_.MotionProfileLines[i].Length);
-                    Robot_.Joints[j].pannel.InputFieldList[3].text = MotionProfile_.MotionProfileLines[i][j+1].ToString();
+                    if (Robot_.Joints[j].jointtype == "r")
+                    {
+                        Robot_.Joints[j].pannel.InputFieldList[3].text = MotionProfile_.MotionProfileLines[i][j+1].ToString();
+                    }
+                    else
+                    {
+                        Robot_.Joints[j].pannel.InputFieldList[2].text = MotionProfile_.MotionProfileLines[i][j+1].ToString();
+                    }
                 }
                 return;
             }
         }
         MotionProfile_.Executing = false;
+    }
+
+    public void ReadRobotFile(){
+        string dataAsJson = File.ReadAllText(@"Robots/Robot1.json");    
+        // Pass the json to JsonUtility, and tell it to create a GameData object from it
+        RobotJson LoadedRobot = JsonUtility.FromJson<RobotJson>(dataAsJson);
+        List<Joint> JointList = new List<Joint>();
+        Robot newRobot;
+        foreach (var LoadedJoint in LoadedRobot.Joints)
+        {
+            AddRobotJoint(new Joint(LoadedJoint.JointType,LoadedJoint.alpha,LoadedJoint.a,LoadedJoint.d,LoadedJoint.theta,new Vector3(0,0,0)));
+        }
     }
 }
