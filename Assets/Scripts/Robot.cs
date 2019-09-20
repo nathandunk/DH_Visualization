@@ -17,6 +17,7 @@ public class Robot
         public List<double> Theta = new List<double>();
         public List<Vector3> Origins = new List<Vector3> { new Vector3(0, 0, 0) };
         public GameObject RobotObject;
+        public Button AddJointButton;
 
         public Robot(GameObject RobotObject_)
         {
@@ -62,6 +63,16 @@ public class Robot
             NewJoint.transform.rotation = Quaternion.Euler(0, 0, 0);
             Joints[Joints.Count - 1].gameobject = NewJoint;
             Origins.Add(new Vector3(0, 0, 0));
+
+            AddJointButton = GameObject.Find("AddJoint").GetComponent<Button>();
+            Vector3 ButtonPosTemp = AddJointButton.GetComponent<RectTransform>().anchoredPosition;
+            ButtonPosTemp[1] = -(165 + 150 * (Joints.Count-1));
+            AddJointButton.GetComponent<RectTransform>().anchoredPosition = ButtonPosTemp;
+
+            if (Joints.Count > 6)
+            {
+                AddJointButton.gameObject.SetActive(false);
+            }
         }
 
         public void dhtf()

@@ -20,6 +20,9 @@ public class RobotManager : MonoBehaviour {
         Joint StarterJoint = new Joint("r", 0, 0, 0, 0, new Vector3(0,0,0));
         robot = new Robot(StarterJoint, gameObject);
 
+        // robot = 
+
+
         RobMotionProfile = new MotionProfile();
 
         RobMotionProfile.LoadProfile();
@@ -43,28 +46,28 @@ public class RobotManager : MonoBehaviour {
     {
         robot.AddJoint();
 
-        Vector3 ButtonPosTemp = AddJointButton.GetComponent<RectTransform>().anchoredPosition;
-        ButtonPosTemp[1] = -(165 + 150 * (robot.Joints.Count-1));
-        AddJointButton.GetComponent<RectTransform>().anchoredPosition = ButtonPosTemp;
+        // Vector3 ButtonPosTemp = AddJointButton.GetComponent<RectTransform>().anchoredPosition;
+        // ButtonPosTemp[1] = -(165 + 150 * (robot.Joints.Count-1));
+        // AddJointButton.GetComponent<RectTransform>().anchoredPosition = ButtonPosTemp;
 
-        if (robot.Joints.Count > 6)
-        {
-            AddJointButton.gameObject.SetActive(false);
-        }
+        // if (robot.Joints.Count > 6)
+        // {
+        //     AddJointButton.gameObject.SetActive(false);
+        // }
     }
 
     public void AddRobotJoint(Joint joint_)
     {
         robot.AddJoint(joint_);
 
-        Vector3 ButtonPosTemp = AddJointButton.GetComponent<RectTransform>().anchoredPosition;
-        ButtonPosTemp[1] = -(165 + 150 * (robot.Joints.Count-1));
-        AddJointButton.GetComponent<RectTransform>().anchoredPosition = ButtonPosTemp;
+    //     Vector3 ButtonPosTemp = AddJointButton.GetComponent<RectTransform>().anchoredPosition;
+    //     ButtonPosTemp[1] = -(165 + 150 * (robot.Joints.Count-1));
+    //     AddJointButton.GetComponent<RectTransform>().anchoredPosition = ButtonPosTemp;
 
-        if (robot.Joints.Count > 6)
-        {
-            AddJointButton.gameObject.SetActive(false);
-        }
+    //     if (robot.Joints.Count > 6)
+    //     {
+    //         AddJointButton.gameObject.SetActive(false);
+    //     }
     }
 
     public void StartProfile()
@@ -95,15 +98,15 @@ public class RobotManager : MonoBehaviour {
         MotionProfile_.Executing = false;
     }
 
-    public void ReadRobotFile(){
-        string dataAsJson = File.ReadAllText(@"Robots/Robot1.json");    
-        // Pass the json to JsonUtility, and tell it to create a GameData object from it
-        RobotJson LoadedRobot = JsonUtility.FromJson<RobotJson>(dataAsJson);
-        List<Joint> JointList = new List<Joint>();
-        Robot newRobot;
-        foreach (var LoadedJoint in LoadedRobot.Joints)
-        {
-            AddRobotJoint(new Joint(LoadedJoint.JointType,LoadedJoint.alpha,LoadedJoint.a,LoadedJoint.d,LoadedJoint.theta,new Vector3(0,0,0)));
-        }
-    }
+    // public void ReadRobotFile(){
+    //     string dataAsJson = File.ReadAllText(@"Robots/Robot1.json");    
+    //     // Pass the json to JsonUtility, and tell it to create a GameData object from it
+    //     RobotJson LoadedRobot = JsonUtility.FromJson<RobotJson>(dataAsJson);
+    //     List<Joint> JointList = new List<Joint>();
+    //     Robot newRobot;
+    //     foreach (var LoadedJoint in LoadedRobot.Joints)
+    //     {
+    //         AddRobotJoint(new Joint(LoadedJoint.JointType,LoadedJoint.alpha,LoadedJoint.a,LoadedJoint.d,LoadedJoint.theta,new Vector3(0,0,0)));
+    //     }
+    // }
 }
